@@ -1,7 +1,9 @@
 import streamlit as st
 import ollama
 import sys
-import logging  # {{ edit_1 }}
+import logging 
+import time  
+import datetime  # Import datetime module
 
 class LlamaModel:
     def __init__(self, model_name="llama2", temperature=0.5, max_tokens=1000):
@@ -28,22 +30,33 @@ def get_llama_model(model_name, temperature, max_tokens):
     
 def generate_response(llama, user_input):
     try:
-        return llama.get_response(user_input)
+        start_time = time.time()  # Start timing
+        response = llama.get_response(user_input)
+        end_time = time.time()  # End timing
+        time_taken = end_time - start_time  # Calculate time taken
+          # Count input words # Count output words
+        return {
+            "Response": response,
+            "Input": user_input,
+            "Time": time_taken
+        }  # Return additional info as a dictionary
     except Exception as e:
         logging.error(f"Error generating response: {e}")  # Log the error
         st.error("Sorry, I couldn't generate a response.")  # Keep user-facing error message
-        return "Sorry, I couldn't generate a response."
+        return "Sorry, I couldn't generate a response.", 0, 0, 0  # Return zeros on error
 
 # {{ edit_2 }}
 logging.basicConfig(filename='llamachat.log', filemode='w', level=logging.INFO)  # Log to file in write mode
 
 def main():
+    st.set_page_config(layout="wide")  # Set layout to wide
 
     # Sidebar for model configuration
     st.sidebar.header("Llama Chat")
-    model_name = st.sidebar.selectbox("Select Model", ["llama3.1"], index=0)
+    
+    model_name  = st.sidebar.selectbox("Select Model", ["llama3.1"], index=0)
     temperature = st.sidebar.slider("Temperature", 0.1, 1.0, 0.5, 0.1)
-    max_tokens = st.sidebar.number_input("Max Tokens", min_value=1, max_value=128000, value=2000, step=100)
+    max_tokens  = st.sidebar.number_input("Max Tokens", min_value=1, max_value=128000, value=2000, step=100)
 
     # Add button to clear chat history in the sidebar
     if st.sidebar.button("Clear History"):
@@ -57,18 +70,28 @@ def main():
     llama = get_llama_model(model_name, temperature, max_tokens)
 
     # Chat interface
-    user_input = st.text_input("You:", key="user_input", value="")  # Clear input field after sending
+    if 'user_input' not in st.session_state:
+        st.session_state.user_input = ""
 
-    # Automatically send message when user input is provided
-    if user_input:
-        st.session_state.chat_history.append(("**You**", user_input))
-        with st.spinner('Generating response...'):  # Spinner moved outside the function
-            response = generate_response(llama, user_input)  # Updated to use the new function
-        st.session_state.chat_history.append(("**Llama**", response))
+    user_input = st.text_input("Enter your input:", value="", key="user_input")  # Set value to empty initially
+
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get current time
+    st.sidebar.write(f"Time: {current_time}")  # Display current time in sidebar
+
+    # Automatically send message when user input is provided and Enter is pressed
+    if user_input:  # Check if there is any input
+        
+        with st.spinner("Generating response..."):  # Add spinner here
+            result = generate_response(llama, user_input)  # Get the result as a dictionary
+            
+        st.session_state.chat_history.append(result)
 
     # Display chat history
-    for role, message in st.session_state.chat_history:
-        st.write(f"{role}: {message}")
+    for entry in st.session_state.chat_history:
+        st.write(f"**User**  : {entry['Input']}")
+        st.write(f"**Llama** : {entry['Response']}")
+        st.write(f"**Word Count** : {len(entry['Response'])}")
+        st.write(f"**Time Taken** ; {entry['Time']}") 
 
 if __name__ == "__main__":
     main()
