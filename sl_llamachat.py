@@ -6,7 +6,7 @@ import time
 import datetime  # Import datetime module
 
 class LlamaModel:
-    def __init__(self, model_name="llama2", temperature=0.5, max_tokens=1000):
+    def __init__(self, model_name="llama3.2", temperature=0.5, max_tokens=1000):
         self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens
@@ -54,7 +54,7 @@ def main():
     # Sidebar for model configuration
     st.sidebar.header("Llama Chat")
     
-    model_name  = st.sidebar.selectbox("Select Model", ["llama3.1"], index=0)
+    model_name  = st.sidebar.selectbox("Select Model", ["llama3.1", "llama3.2"], index=0)
     temperature = st.sidebar.slider("Temperature", 0.1, 1.0, 0.5, 0.1)
     max_tokens  = st.sidebar.number_input("Max Tokens", min_value=1, max_value=128000, value=2000, step=100)
 
